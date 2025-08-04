@@ -88,3 +88,4 @@ void crsfRxUpdateBaudrate(uint32_t baudrate);
 bool crsfRxUseNegotiatedBaud(void);
 bool crsfRxIsActive(void);
 void crsfRxBind(void);
+void crsfRxBindPhrase(const char* bindPhrase);

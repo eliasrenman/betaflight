@@ -75,6 +75,7 @@ enum {
 
 enum {
     CRSF_COMMAND_SUBCMD_RX_BIND = 0x01,    // bind command
+    CRSF_COMMAND_SUBCMD_RX_BIND_PHRASE = 0x02,    // bind phrase command
 };
 
 enum {

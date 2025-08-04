@@ -697,4 +697,64 @@ void crsfRxBind(void)
         serialWriteBuf(serialPort, bindFrame, 9);
     }
 }
+
+void crsfRxBindPhrase(const char* bindPhrase)
+{
+    if (serialPort != NULL && bindPhrase != NULL && strlen(bindPhrase) > 0) {
+        const uint8_t bindPhraseLength = strlen(bindPhrase);
+        const uint8_t frameLength = 8 + bindPhraseLength; // base length + bind phrase length
+        
+        // Allocate frame buffer dynamically based on bind phrase length
+        uint8_t *bindPhraseFrame = malloc(frameLength + 2); // +2 for sync byte and length
+        if (bindPhraseFrame != NULL) {
+            bindPhraseFrame[0] = CRSF_SYNC_BYTE;
+            bindPhraseFrame[1] = frameLength;
+            bindPhraseFrame[2] = CRSF_FRAMETYPE_COMMAND;
+            bindPhraseFrame[3] = CRSF_ADDRESS_CRSF_RECEIVER;
+            bindPhraseFrame[4] = CRSF_ADDRESS_FLIGHT_CONTROLLER;
+            bindPhraseFrame[5] = CRSF_COMMAND_SUBCMD_RX;
+            bindPhraseFrame[6] = CRSF_COMMAND_SUBCMD_RX_BIND_PHRASE; // New subcommand for bind phrase
+            bindPhraseFrame[7] = bindPhraseLength;
+            
+            // Copy bind phrase data
+            memcpy(&bindPhraseFrame[8], bindPhrase, bindPhraseLength);
+            
+            // Calculate CRC8 for command data using the same algorithm as existing code
+            uint8_t cmdCrc = crc8_poly_0xba(0, CRSF_FRAMETYPE_COMMAND);
+            cmdCrc = crc8_poly_0xba(cmdCrc, CRSF_ADDRESS_CRSF_RECEIVER);
+            cmdCrc = crc8_poly_0xba(cmdCrc, CRSF_ADDRESS_FLIGHT_CONTROLLER);
+            cmdCrc = crc8_poly_0xba(cmdCrc, CRSF_COMMAND_SUBCMD_RX);
+            cmdCrc = crc8_poly_0xba(cmdCrc, CRSF_COMMAND_SUBCMD_RX_BIND_PHRASE);
+            cmdCrc = crc8_poly_0xba(cmdCrc, bindPhraseLength);
+            
+            // Add bind phrase data to CRC
+            for (int i = 0; i < bindPhraseLength; i++) {
+                cmdCrc = crc8_poly_0xba(cmdCrc, bindPhrase[i]);
+            }
+            
+            bindPhraseFrame[frameLength] = cmdCrc;
+            
+            // Calculate packet CRC using the same algorithm as existing code
+            uint8_t packetCrc = crc8_dvb_s2(0, CRSF_FRAMETYPE_COMMAND);
+            packetCrc = crc8_dvb_s2(packetCrc, CRSF_ADDRESS_CRSF_RECEIVER);
+            packetCrc = crc8_dvb_s2(packetCrc, CRSF_ADDRESS_FLIGHT_CONTROLLER);
+            packetCrc = crc8_dvb_s2(packetCrc, CRSF_COMMAND_SUBCMD_RX);
+            packetCrc = crc8_dvb_s2(packetCrc, CRSF_COMMAND_SUBCMD_RX_BIND_PHRASE);
+            packetCrc = crc8_dvb_s2(packetCrc, bindPhraseLength);
+            
+            // Add bind phrase data to packet CRC
+            for (int i = 0; i < bindPhraseLength; i++) {
+                packetCrc = crc8_dvb_s2(packetCrc, bindPhrase[i]);
+            }
+            
+            // Add command CRC to packet CRC
+            packetCrc = crc8_dvb_s2(packetCrc, cmdCrc);
+            
+            bindPhraseFrame[frameLength + 1] = packetCrc;
+            
+            serialWriteBuf(serialPort, bindPhraseFrame, frameLength + 2);
+            free(bindPhraseFrame);
+        }
+    }
+}
 #endif

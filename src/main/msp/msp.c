@@ -137,6 +137,7 @@
 
 #include "rx/rx.h"
 #include "rx/rx_bind.h"
+#include "rx/rx_bind_phrase.h"
 #include "rx/msp.h"
 
 #include "scheduler/scheduler.h"
@@ -4069,7 +4070,25 @@ static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, 
 
         break;
 #endif
-
+#if defined(USE_SERIALRX_CRSF)
+    case MSP2_BETAFLIGHT_BIND_PHRASE:
+        {
+            // Read bind phrase length and data from MSP packet
+            const unsigned bindPhraseLength = sbufReadU8(src);
+            if (bindPhraseLength > 0 && bindPhraseLength <= 32) { // Reasonable max length
+                char bindPhrase[33]; // +1 for null terminator
+                sbufReadData(src, bindPhrase, bindPhraseLength);
+                bindPhrase[bindPhraseLength] = '\0'; // Null terminate
+                
+                if (!startRxBindPhrase(bindPhrase)) {
+                    return MSP_RESULT_ERROR;
+                }
+            } else {
+                return MSP_RESULT_ERROR;
+            }
+        }
+        break;
+#endif
     case MSP2_SET_TEXT:
         {
             // type byte, then length byte followed by the actual characters

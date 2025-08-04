@@ -154,6 +154,7 @@ bool cliMode = false;
 #include "pg/vtx_table.h"
 
 #include "rx/rx_bind.h"
+#include "rx/rx_bind_phrase.h"
 #include "rx/rx_spi.h"
 
 #include "scheduler/scheduler.h"
@@ -3499,6 +3500,22 @@ static void cliRxBind(const char *cmdName, char *cmdline)
 }
 #endif
 
+#if defined(USE_SERIALRX_CRSF)
+static void cliRxBindPhrase(const char *cmdName, char *cmdline)
+{
+    if (isEmpty(cmdline)) {
+        cliPrintErrorLinef(cmdName, "Bind phrase required.");
+        return;
+    }
+    
+    if (!startRxBindPhrase(cmdline)) {
+        cliPrintErrorLinef(cmdName, "Not supported or invalid bind phrase.");
+    } else {
+        cliPrintLinef("Setting Bind phrase: %s", cmdline);
+    }
+}
+#endif
+
 static void printMap(dumpFlags_t dumpMask, const rxConfig_t *rxConfig, const rxConfig_t *defaultRxConfig, const char *headingStr)
 {
     bool equalsDefault = true;
@@ -6566,6 +6583,9 @@ const clicmd_t cmdTable[] = {
 #endif // USE_BEEPER
 #if defined(USE_RX_BIND)
     CLI_COMMAND_DEF("bind_rx", "initiate binding for RX SPI, SRXL2 or CRSF", NULL, cliRxBind),
+#endif
+#if defined(USE_SERIALRX_CRSF)
+    CLI_COMMAND_DEF("bind_phrase", "get / set the bindphrase for CRSF", "<bind phrase>", cliRxBindPhrase),
 #endif
 #if defined(USE_FLASH_BOOT_LOADER)
     CLI_COMMAND_DEF("bl", "reboot into bootloader", "[flash|rom]", cliBootloader),
