@@ -186,6 +186,7 @@ COMMON_SRC = \
             rx/rc_stats.c \
             rx/rx.c \
             rx/rx_bind.c \
+            rx/rx_bind_phrase.c \
             rx/rx_spi.c \
             rx/rx_spi_common.c \
             rx/crsf.c \
@@ -523,6 +524,7 @@ SIZE_OPTIMISED_SRC += \
             osd/osd_elements.c \
             osd/osd_warnings.c \
             rx/rx_bind.c \
+            rx/rx_bind_phrase.c \
             io/vtx_msp.c \
             cms/cms_menu_vtx_msp.c
 
