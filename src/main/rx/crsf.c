@@ -50,6 +50,7 @@
 #include "rx/crsf.h"
 
 #include "telemetry/crsf.h"
+#include "rx_uid_common.h"
 
 #define CRSF_TIME_NEEDED_PER_FRAME_US   1750 // a maximally sized 64byte payload will take ~1550us, round up to 1750.
 #define CRSF_TIME_BETWEEN_FRAMES_US     6667 // At fastest, frames are sent by the transmitter every 6.667 milliseconds, 150 Hz
@@ -698,13 +699,24 @@ void crsfRxBind(void)
     }
 }
 
+
+
+// Use the external UID generation functions from rx_uid_common.c
+// This implements the exact ExpressLRS algorithm
+
 void crsfRxBindPhrase(const char* bindPhrase)
 {
     if (serialPort != NULL && bindPhrase != NULL && strlen(bindPhrase) > 0) {
-        const uint8_t bindPhraseLength = strlen(bindPhrase);
-        const uint8_t frameLength = 8 + bindPhraseLength; // base length + bind phrase length
+        // Generate UID from bind phrase first
+        uint8_t uid[6];
+        if (!generateUIDFromPhrase(bindPhrase, uid)) {
+            // Fallback: generate hash of phrase
+            generateMD5UID(bindPhrase, uid);
+        }
         
-        // Allocate frame buffer dynamically based on bind phrase length
+        const uint8_t frameLength = 8 + 6; // base length + 6-byte UID
+        
+        // Allocate frame buffer for 6-byte UID
         uint8_t *bindPhraseFrame = malloc(frameLength + 2); // +2 for sync byte and length
         if (bindPhraseFrame != NULL) {
             bindPhraseFrame[0] = CRSF_SYNC_BYTE;
@@ -713,11 +725,11 @@ void crsfRxBindPhrase(const char* bindPhrase)
             bindPhraseFrame[3] = CRSF_ADDRESS_CRSF_RECEIVER;
             bindPhraseFrame[4] = CRSF_ADDRESS_FLIGHT_CONTROLLER;
             bindPhraseFrame[5] = CRSF_COMMAND_SUBCMD_RX;
-            bindPhraseFrame[6] = CRSF_COMMAND_SUBCMD_RX_BIND_PHRASE; // New subcommand for bind phrase
-            bindPhraseFrame[7] = bindPhraseLength;
+            bindPhraseFrame[6] = CRSF_COMMAND_SUBCMD_RX_BIND_PHRASE;
+            bindPhraseFrame[7] = 6; // UID length is always 6 bytes
             
-            // Copy bind phrase data
-            memcpy(&bindPhraseFrame[8], bindPhrase, bindPhraseLength);
+            // Copy 6-byte UID instead of raw phrase
+            memcpy(&bindPhraseFrame[8], uid, 6);
             
             // Calculate CRC8 for command data using the same algorithm as existing code
             uint8_t cmdCrc = crc8_poly_0xba(0, CRSF_FRAMETYPE_COMMAND);
@@ -725,11 +737,11 @@ void crsfRxBindPhrase(const char* bindPhrase)
             cmdCrc = crc8_poly_0xba(cmdCrc, CRSF_ADDRESS_FLIGHT_CONTROLLER);
             cmdCrc = crc8_poly_0xba(cmdCrc, CRSF_COMMAND_SUBCMD_RX);
             cmdCrc = crc8_poly_0xba(cmdCrc, CRSF_COMMAND_SUBCMD_RX_BIND_PHRASE);
-            cmdCrc = crc8_poly_0xba(cmdCrc, bindPhraseLength);
+            cmdCrc = crc8_poly_0xba(cmdCrc, 6); // UID length is always 6 bytes
             
-            // Add bind phrase data to CRC
-            for (int i = 0; i < bindPhraseLength; i++) {
-                cmdCrc = crc8_poly_0xba(cmdCrc, bindPhrase[i]);
+            // Add UID data to CRC
+            for (int i = 0; i < 6; i++) {
+                cmdCrc = crc8_poly_0xba(cmdCrc, uid[i]);
             }
             
             bindPhraseFrame[frameLength] = cmdCrc;
@@ -740,11 +752,11 @@ void crsfRxBindPhrase(const char* bindPhrase)
             packetCrc = crc8_dvb_s2(packetCrc, CRSF_ADDRESS_FLIGHT_CONTROLLER);
             packetCrc = crc8_dvb_s2(packetCrc, CRSF_COMMAND_SUBCMD_RX);
             packetCrc = crc8_dvb_s2(packetCrc, CRSF_COMMAND_SUBCMD_RX_BIND_PHRASE);
-            packetCrc = crc8_dvb_s2(packetCrc, bindPhraseLength);
+            packetCrc = crc8_dvb_s2(packetCrc, 6); // UID length is always 6 bytes
             
-            // Add bind phrase data to packet CRC
-            for (int i = 0; i < bindPhraseLength; i++) {
-                packetCrc = crc8_dvb_s2(packetCrc, bindPhrase[i]);
+            // Add UID data to packet CRC
+            for (int i = 0; i < 6; i++) {
+                packetCrc = crc8_dvb_s2(packetCrc, uid[i]);
             }
             
             // Add command CRC to packet CRC

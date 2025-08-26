@@ -3507,11 +3507,17 @@ static void cliRxBindPhrase(const char *cmdName, char *cmdline)
         cliPrintErrorLinef(cmdName, "Bind phrase required.");
         return;
     }
-    
-    if (!startRxBindPhrase(cmdline)) {
-        cliPrintErrorLinef(cmdName, "Not supported or invalid bind phrase.");
-    } else {
-        cliPrintLinef("Setting Bind phrase: %s", cmdline);
+      // Generate UID from bind phrase first
+      uint8_t uid[6];
+      if (!generateUIDFromPhrase(cmdline, uid)) {
+          // Fallback: generate hash of phrase
+          generateMD5UID(cmdline, uid);
+      }
+      if (!startRxBindPhrase(cmdline)) {
+          cliPrintErrorLinef(cmdName, "Not supported or invalid bind phrase.");
+        } else {
+            cliPrintLinef("Setting Bind phrase: %s", cmdline);
+            cliPrintLinef("UID: [%d,%d,%d,%d,%d,%d]", uid[0], uid[1], uid[2], uid[3], uid[4], uid[5]);
     }
 }
 #endif

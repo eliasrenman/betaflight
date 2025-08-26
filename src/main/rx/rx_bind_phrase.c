@@ -20,6 +20,8 @@
 
 #include "platform.h"
 #include <string.h>
+#include <stdlib.h>
+#include <stdbool.h>
 
 #if defined(USE_RX_BIND)
 

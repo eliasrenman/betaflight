@@ -187,6 +187,7 @@ COMMON_SRC = \
             rx/rx.c \
             rx/rx_bind.c \
             rx/rx_bind_phrase.c \
+            rx/rx_uid_common.c \
             rx/rx_spi.c \
             rx/rx_spi_common.c \
             rx/crsf.c \
@@ -454,6 +455,7 @@ SPEED_OPTIMISED_SRC += \
             rx/rc_stats.c \
             rx/rx.c \
             rx/rx_spi.c \
+            rx/rx_uid_common.c \
             rx/crsf.c \
             rx/frsky_crc.c \
             rx/sbus.c \

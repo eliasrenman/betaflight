@@ -9,7 +9,8 @@
  *
  * Cleanflight and Betaflight are distributed in the hope that they
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this software.
@@ -19,7 +20,8 @@
 
 #pragma once
 
-#include "rx_uid_common.h"
+#include <stdint.h>
+#include <stdbool.h>
 
-bool startRxBindPhrase(const char* bindPhrase);
-bool getRxBindPhraseSupported(void);
+bool generateUIDFromPhrase(const char* phrase, uint8_t* uid);
+void generateMD5UID(const char* phrase, uint8_t* uid);
